@@ -1,0 +1,151 @@
+id: m347-boss-review
+module: m347
+track: m347-advanced
+title: "🏆 Boss: Docker-Setup Review"
+difficulty: 4
+estimated_minutes: 15
+type: peer-review
+competencies:
+  - HZ-B1
+  - HZ-B2
+  - HZ-C1
+  - HZ-D2
+tags: [boss, peer-review, best-practices, code-review, security]
+prerequisites: [m347-fix-my-dockerfile, m347-compose-the-stack]
+author: Simon
+version: "1.0"
+
+description: |
+  # 🏆 Boss-Challenge: Docker-Setup Review
+
+  Ein Kollege hat ein Docker-Setup für eine Produktions-Webapplikation
+  erstellt und bittet dich um ein Code Review.
+
+  **Analysiere das Dockerfile und das docker-compose.yml** anhand
+  der Checkliste. Bewerte jeden Punkt mit «Ja» (Best Practice erfüllt)
+  oder «Nein» (Verbesserung nötig).
+
+hints:
+  - "Achte besonders auf Sicherheits-Aspekte und Image-Grösse."
+  - "Prüfe ob Passwörter sicher gehandhabt werden."
+  - "Ist das Setup für Produktionseinsatz geeignet?"
+
+config:
+  instruction: |
+    Prüfe das folgende Docker-Setup. Entspricht jeder Punkt den
+    Best Practices?
+
+  artifact: |
+    # === Dockerfile ===
+    FROM ubuntu:latest
+    RUN apt-get update && apt-get install -y nodejs npm curl wget git
+    WORKDIR /app
+    COPY . /app
+    RUN npm install
+    ENV NODE_ENV=production
+    ENV DATABASE_URL=postgresql://admin:SuperSecret123@db:5432/prod
+    EXPOSE 3000
+    USER root
+    CMD node server.js
+
+    # === docker-compose.yml ===
+    services:
+      app:
+        build: .
+        ports:
+          - "3000:3000"
+        restart: always
+
+      db:
+        image: postgres
+        environment:
+          POSTGRES_PASSWORD: SuperSecret123
+        ports:
+          - "5432:5432"
+
+  checklist:
+    - id: base-image
+      question: "Ist das Base Image optimal gewählt?"
+      expected: false
+      explanation: |
+        ❌ `ubuntu:latest` ist unnötig gross (~70 MB vs. 900+ MB) und
+        enthält viele Pakete die nicht gebraucht werden.
+        Besser: `node:20-alpine` – kleiner, sicherer, Node.js vorinstalliert.
+
+    - id: pinned-version
+      question: "Sind die Versionen gepinnt (kein 'latest')?"
+      expected: false
+      explanation: |
+        ❌ Sowohl `ubuntu:latest` als auch `postgres` (ohne Tag)
+        verwenden implizit 'latest'. Das kann bei jedem Build ein
+        anderes Image liefern. Immer Versionen pinnen!
+
+    - id: layer-cache
+      question: "Ist das Layer-Caching optimal aufgebaut?"
+      expected: false
+      explanation: |
+        ❌ `COPY . /app` vor `npm install` bedeutet, dass bei jeder
+        Code-Änderung alle Dependencies neu installiert werden.
+        Besser: Erst `package*.json` kopieren, dann `npm install`,
+        dann den Rest.
+
+    - id: secrets-handling
+      question: "Werden Secrets (Passwörter) sicher gehandhabt?"
+      expected: false
+      explanation: |
+        ❌ Doppeltes Problem! Das Datenbank-Passwort steht:
+        1. Hardcoded im Dockerfile (ENV) → wird ins Image eingebettet
+        2. Im Klartext im docker-compose.yml
+        Besser: `.env`-Datei oder Docker Secrets verwenden.
+
+    - id: user-privilege
+      question: "Läuft die Applikation mit minimalen Rechten?"
+      expected: false
+      explanation: |
+        ❌ `USER root` ist ein Sicherheitsrisiko. Falls ein Angreifer
+        in den Container einbricht, hat er Root-Rechte.
+        Besser: Eigenen User erstellen (`RUN adduser --disabled-password app`)
+        und mit `USER app` wechseln.
+
+    - id: cmd-form
+      question: "Ist die CMD-Anweisung in Best-Practice-Form?"
+      expected: false
+      explanation: |
+        ❌ Shell-Form (`CMD node server.js`) startet über /bin/sh.
+        Signal-Handling (SIGTERM für Graceful Shutdown) funktioniert
+        damit nicht korrekt.
+        Besser: Exec-Form `CMD ["node", "server.js"]`
+
+    - id: unnecessary-packages
+      question: "Enthält das Image nur die nötigen Pakete?"
+      expected: false
+      explanation: |
+        ❌ `curl`, `wget`, `git` werden zur Laufzeit nicht gebraucht.
+        Jedes zusätzliche Paket ist potenzielle Angriffsfläche.
+        Build-Tools gehören in einen Multi-Stage Build, nicht ins
+        finale Image.
+
+    - id: db-exposed
+      question: "Ist die Datenbank sicher konfiguriert?"
+      expected: false
+      explanation: |
+        ❌ PostgreSQL ist mit `ports: "5432:5432"` von aussen erreichbar!
+        Datenbanken sollten nur im internen Docker-Netzwerk verfügbar
+        sein (kein Port-Mapping nach aussen). Nur die App sollte
+        auf die DB zugreifen können.
+
+    - id: healthcheck
+      question: "Ist ein Health Check konfiguriert?"
+      expected: false
+      explanation: |
+        ❌ Weder im Dockerfile noch im docker-compose.yml ist ein
+        Health Check definiert. Ohne Health Check erkennt Docker nicht,
+        wenn die Applikation zwar läuft aber nicht funktioniert.
+
+    - id: volumes
+      question: "Sind Datenbank-Daten persistent?"
+      expected: false
+      explanation: |
+        ❌ Kein Volume für PostgreSQL definiert! Bei einem
+        `docker compose down` gehen alle Daten verloren.
+        Mindestens ein Named Volume für `/var/lib/postgresql/data`.

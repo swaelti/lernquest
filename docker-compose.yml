@@ -1,0 +1,20 @@
+services:
+  lernquest:
+    build: .
+    # Alternativ: image: ghcr.io/simonx/lernquest:latest
+    ports:
+      - "${PORT:-8080}:8080"
+    volumes:
+      - lernquest-data:/app/data
+      - lernquest-content:/app/content
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-change-me-to-a-random-string}
+      - CONTENT_REPO=${CONTENT_REPO:-https://github.com/simonx/lernquest-content}
+      - AUTO_SYNC=${AUTO_SYNC:-off}
+      - BASE_URL=${BASE_URL:-http://localhost:8080}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    restart: unless-stopped
+
+volumes:
+  lernquest-data:
+  lernquest-content:

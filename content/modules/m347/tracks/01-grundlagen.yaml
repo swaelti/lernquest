@@ -1,0 +1,14 @@
+id: m347-grundlagen
+title: "Grundlagen"
+description: "Von Null auf Docker – Container verstehen und erste Images bauen"
+icon: box
+order: 1
+
+challenges:
+  - m347-container-vs-vm
+  - m347-dockerfile-anatomie
+  - m347-fix-my-dockerfile
+  - m347-layer-cache-quiz
+  - m347-image-groesse
+
+unlock_rule: none

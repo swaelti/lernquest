@@ -1,0 +1,208 @@
+id: m347-boss-incident
+module: m347
+track: m347-advanced
+title: "🏆 Boss: Incident Response – Container Down!"
+difficulty: 5
+estimated_minutes: 20
+type: scenario
+competencies:
+  - HZ-D1
+  - HZ-D2
+  - HZ-C2
+tags: [boss, incident, debugging, logs, troubleshooting, production]
+prerequisites: [m347-netzwerk-detective, m347-healthcheck]
+author: Simon
+version: "1.0"
+
+description: |
+  # 🏆 Boss-Challenge: Incident Response
+
+  Es ist Montagmorgen, 08:15 Uhr. Du kommst ins Büro und siehst
+  12 verpasste Anrufe. Das Monitoring zeigt: Die Produktionsumgebung
+  einer Schweizer Online-Banking-App ist seit 06:30 Uhr gestört.
+
+  **Analysiere die Situation, finde die Ursache und löse das Problem.**
+
+hints:
+  - "Strukturiertes Vorgehen: Zuerst Symptome sammeln, dann Hypothesen bilden, dann verifizieren."
+  - "Container-Logs sind dein bester Freund bei der Fehlersuche."
+
+config:
+  initial_situation: |
+    **Monitoring-Dashboard:**
+    - 🔴 payment-service: 3/5 Replicas DOWN
+    - 🟡 api-gateway: Response Time 12s (normal: 200ms)
+    - 🟢 user-service: OK
+    - 🟢 frontend: OK
+    - 🟡 PostgreSQL: Connections at 95% limit
+
+    **Alerts:**
+    - 06:32 – payment-service: Health check failed (Container 2)
+    - 06:35 – payment-service: OOMKilled (Container 3)
+    - 06:41 – payment-service: Health check failed (Container 4)
+    - 07:15 – api-gateway: Upstream timeout errors
+    - 07:22 – monitoring: PostgreSQL connection pool near limit
+
+  steps:
+    - id: step1
+      text: "Was ist dein erster Schritt?"
+      options:
+        - id: logs
+          text: "📋 Container-Logs des payment-service prüfen"
+          next: step2-logs
+          points: 40
+          feedback: "Genau richtig! Die Logs geben den wichtigsten Hinweis auf die Ursache."
+        - id: restart
+          text: "🔄 Sofort alle payment-service Container neu starten"
+          next: step2-restart
+          points: 15
+          feedback: "Verständlich als Sofortmassnahme, aber du behandelst nur das Symptom. Die Ursache bleibt."
+        - id: rollback
+          text: "⏪ Auf die letzte Version zurückrollen"
+          next: step2-rollback
+          points: 25
+          feedback: "Kann sinnvoll sein – aber war das letzte Deployment wirklich der Auslöser? Du weisst es noch nicht."
+
+    - id: step2-logs
+      text: |
+        Die Logs des payment-service zeigen:
+
+        ```
+        06:30:12 INFO  Starting payment-service v2.4.1
+        06:30:14 INFO  Connected to PostgreSQL
+        06:30:15 INFO  Processing pending transactions...
+        06:31:45 WARN  Memory usage: 450MB / 512MB
+        06:32:01 ERROR java.lang.OutOfMemoryError: Java heap space
+        06:32:01 ERROR   at com.bank.payment.BatchProcessor.processAll
+        06:32:02 INFO  Container killed: OOMKilled
+        ```
+
+        Was ist die wahrscheinlichste Ursache?
+      options:
+        - id: memory-leak
+          text: "🐛 Memory Leak im BatchProcessor – verarbeitet zu viele Transactions auf einmal"
+          next: step3-fix
+          points: 50
+          feedback: |
+            Perfekt analysiert! Der BatchProcessor lädt alle pending
+            Transactions in den Speicher. Bei vielen Transaktionen über
+            das Wochenende reicht der Heap nicht mehr.
+        - id: limit-too-low
+          text: "📏 Memory-Limit des Containers zu niedrig (512MB)"
+          next: step3-limit
+          points: 25
+          feedback: |
+            Teilweise richtig – das Limit ist knapp. Aber einfach mehr
+            Memory geben behandelt nur das Symptom. Der BatchProcessor
+            hat ein grundlegendes Problem.
+        - id: db-issue
+          text: "🗄️ PostgreSQL-Problem verursacht den Memory-Anstieg"
+          next: step3-fix
+          points: 15
+          feedback: |
+            Die DB-Verbindung steht (Zeile 2). Das Problem ist im
+            Java-Code: BatchProcessor.processAll lädt zu viel in den Heap.
+
+    - id: step2-restart
+      text: |
+        Du startest die Container neu. Sie laufen kurz, dann crashed
+        Container 2 wieder nach 90 Sekunden mit demselben Fehler:
+
+        ```
+        ERROR java.lang.OutOfMemoryError: Java heap space
+        ERROR   at com.bank.payment.BatchProcessor.processAll
+        ```
+
+        Das Problem reproduziert sich. Was nun?
+      options:
+        - id: check-logs
+          text: "📋 Die Logs genauer analysieren"
+          next: step3-fix
+          points: 40
+          feedback: "Jetzt bist du auf dem richtigen Weg. Der OOMKill kommt vom BatchProcessor."
+        - id: scale-up
+          text: "⬆️ Memory-Limit auf 2GB erhöhen"
+          next: step3-limit
+          points: 20
+          feedback: "Das verschafft Zeit, löst aber nicht die Root Cause."
+
+    - id: step2-rollback
+      text: |
+        Du rollst auf v2.4.0 zurück. Aber das Problem besteht weiterhin!
+        Die Logs zeigen:
+
+        ```
+        ERROR java.lang.OutOfMemoryError: Java heap space
+        ERROR   at com.bank.payment.BatchProcessor.processAll
+        ```
+
+        Also kein Deployment-Problem. Was ist der nächste Schritt?
+      options:
+        - id: investigate
+          text: "📋 Logs und Container-Metriken genauer analysieren"
+          next: step3-fix
+          points: 40
+          feedback: "Richtig – die Ursache liegt im Code, nicht im Deployment."
+
+    - id: step3-fix
+      text: |
+        Du hast die Root Cause identifiziert: Der BatchProcessor lädt
+        alle pending Transactions in den Speicher. Über das Wochenende
+        haben sich 50'000 Transaktionen angestaut.
+
+        **Sofortmassnahme:** Wie stabilisierst du den Service JETZT?
+      options:
+        - id: batch-limit
+          text: "Batch-Grösse limitieren: Transactions in Chunks von 100 verarbeiten"
+          next: conclusion-best
+          points: 50
+          feedback: |
+            Perfekt! Paging/Chunking ist die richtige Lösung. Der
+            BatchProcessor verarbeitet jetzt nur 100 Transactions pro
+            Durchlauf statt alle auf einmal.
+        - id: increase-memory
+          text: "Memory-Limit auf 2GB erhöhen und beobachten"
+          next: conclusion-ok
+          points: 25
+          feedback: |
+            Das hilft kurzfristig, aber bei 100'000 Transaktionen wird
+            auch 2GB nicht reichen. Die eigentliche Lösung ist Paging.
+
+    - id: step3-limit
+      text: |
+        Mit 2GB Memory läuft der Service wieder – vorerst. Aber am
+        nächsten Wochenende könnte dasselbe passieren. Was ist die
+        nachhaltige Lösung?
+      options:
+        - id: batch-fix
+          text: "Den BatchProcessor auf Paging umstellen"
+          next: conclusion-ok
+          points: 40
+          feedback: "Genau! Ohne Paging wird der Service bei genug Transaktionen immer wieder crashen."
+
+  conclusions:
+    - id: conclusion-best
+      text: |
+        **Hervorragend! Incident gelöst.**
+
+        Du hast strukturiert gearbeitet:
+        1. ✅ Logs analysiert → OOMKilled identifiziert
+        2. ✅ Root Cause gefunden → BatchProcessor Memory Leak
+        3. ✅ Nachhaltig gefixt → Paging implementiert
+
+        **Post-Mortem-Massnahmen:**
+        - Memory-Alerting verbessern (Warnung bei 80%)
+        - Batch-Processing-Limits als Standard einführen
+        - Weekend-Monitoring einrichten
+      rating: excellent
+
+    - id: conclusion-ok
+      text: |
+        **Service wiederhergestellt**, aber es gibt Verbesserungspotential.
+
+        Nächstes Mal: Erst Logs lesen, dann handeln. Und immer die
+        Root Cause beheben, nicht nur die Symptome.
+
+        **Takeaway:** In Production geht es darum, **schnell zu stabilisieren**
+        UND **nachhaltig zu fixen**. Beides ist wichtig.
+      rating: good

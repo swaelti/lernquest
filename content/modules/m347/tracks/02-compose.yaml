@@ -1,0 +1,15 @@
+id: m347-compose
+title: "Compose & Networking"
+description: "Multi-Container-Setups, Netzwerke, Volumes und Konfiguration meistern"
+icon: network
+order: 2
+
+challenges:
+  - m347-compose-the-stack
+  - m347-fix-compose
+  - m347-netzwerk-detective
+  - m347-volume-raetsel
+  - m347-env-secrets
+
+unlock_rule: threshold
+threshold_percent: 60

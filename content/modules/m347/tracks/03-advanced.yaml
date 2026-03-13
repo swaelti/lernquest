@@ -1,0 +1,15 @@
+id: m347-advanced
+title: "Fortgeschritten"
+description: "Health Checks, Security, CI/CD und Architektur-Entscheide"
+icon: shield
+order: 3
+
+challenges:
+  - m347-healthcheck
+  - m347-image-optimieren
+  - m347-security-scan
+  - m347-cicd-pipeline
+  - m347-monolith-vs-micro
+
+unlock_rule: threshold
+threshold_percent: 60

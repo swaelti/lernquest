@@ -1,0 +1,91 @@
+id: m347-security-scan
+module: m347
+track: m347-advanced
+title: "Security Scan: Trivy-Report lesen"
+difficulty: 3
+estimated_minutes: 12
+type: multiple-choice
+competencies:
+  - HZ-D2
+tags: [security, trivy, vulnerabilities, cve, scanning]
+prerequisites: [m347-fix-my-dockerfile]
+author: Simon
+version: "1.0"
+
+description: |
+  Du hast einen Trivy Security Scan auf dein Docker-Image ausgeführt.
+  Der Report zeigt folgende Ergebnisse:
+
+  ```
+  myapp:latest (alpine 3.18.4)
+
+  Total: 12 (UNKNOWN: 0, LOW: 4, MEDIUM: 5, HIGH: 2, CRITICAL: 1)
+
+  ┌──────────────┬──────────────┬──────────┬─────────────────────┐
+  │   Library    │ Vulnerability│ Severity │    Fixed Version    │
+  ├──────────────┼──────────────┼──────────┼─────────────────────┤
+  │ libcrypto3   │ CVE-2024-001 │ CRITICAL │ 3.1.4-r6           │
+  │ libssl3      │ CVE-2024-002 │ HIGH     │ 3.1.4-r6           │
+  │ curl         │ CVE-2024-003 │ HIGH     │ 8.5.0-r1           │
+  │ zlib         │ CVE-2024-004 │ MEDIUM   │ (not available)     │
+  │ busybox      │ CVE-2024-005 │ LOW      │ 1.36.1-r16         │
+  └──────────────┴──────────────┴──────────┴─────────────────────┘
+
+  Node.js Dependencies (package-lock.json)
+
+  ┌──────────────┬──────────────┬──────────┬─────────────────────┐
+  │   Library    │ Vulnerability│ Severity │    Fixed Version    │
+  ├──────────────┼──────────────┼──────────┼─────────────────────┤
+  │ express      │ CVE-2024-010 │ MEDIUM   │ 4.19.2             │
+  │ lodash       │ CVE-2024-011 │ MEDIUM   │ 4.17.21            │
+  └──────────────┴──────────────┴──────────┴─────────────────────┘
+  ```
+
+hints:
+  - "CRITICAL und HIGH Vulnerabilities sollten sofort behandelt werden."
+  - "Manchmal reicht ein Update des Base-Images, um OS-Level-Fixes zu bekommen."
+
+config:
+  mode: multi
+  shuffle: true
+
+  question: "Welche Massnahmen sind sinnvoll? (Mehrere Antworten)"
+
+  options:
+    - id: a
+      text: "Base Image auf eine neuere Alpine-Version updaten (z.B. 3.19)"
+      correct: true
+      feedback: |
+        Richtig! Die meisten OS-Level-Fixes (libcrypto, libssl, curl)
+        kommen durch ein Update des Base-Images. Das ist der einfachste
+        und effektivste erste Schritt.
+
+    - id: b
+      text: "express und lodash in package.json auf die gefixte Version updaten"
+      correct: true
+      feedback: |
+        Korrekt! Dependency-Vulnerabilities werden durch Updates der
+        betroffenen Packages behoben. `npm audit fix` kann dabei helfen.
+
+    - id: c
+      text: "Den Scan ignorieren – Alpine ist sicher genug"
+      correct: false
+      feedback: |
+        Falsch! Ein CRITICAL-Finding in libcrypto (OpenSSL) kann
+        Remote Code Execution ermöglichen. Das darf nicht ignoriert werden.
+
+    - id: d
+      text: "curl aus dem Image entfernen, falls es nicht gebraucht wird"
+      correct: true
+      feedback: |
+        Ja! Jedes unnötige Paket ist potenzielle Angriffsfläche.
+        Wenn curl nicht zur Laufzeit gebraucht wird, sollte es entfernt
+        oder gar nicht erst installiert werden.
+
+    - id: e
+      text: "Das CVE-2024-004 in zlib kann ignoriert werden, weil kein Fix verfügbar ist"
+      correct: false
+      feedback: |
+        Nicht ganz – auch ohne Fix sollte man das im Auge behalten.
+        Mögliche Mitigationen: neueres Base-Image prüfen, oder prüfen
+        ob die Vulnerability in deinem Kontext ausnutzbar ist.

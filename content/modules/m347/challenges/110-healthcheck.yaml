@@ -1,0 +1,82 @@
+id: m347-healthcheck
+module: m347
+track: m347-advanced
+title: "Health Check implementieren"
+difficulty: 3
+estimated_minutes: 12
+type: fix-the-code
+competencies:
+  - HZ-D1
+tags: [healthcheck, monitoring, dockerfile, restart-policy]
+prerequisites: [m347-fix-my-dockerfile]
+author: Simon
+version: "1.0"
+
+description: |
+  Ein Container, der läuft, ist nicht automatisch gesund. Der Prozess
+  könnte hängen, die Applikation eine Endlosschleife haben, oder
+  die Datenbank-Verbindung verloren gegangen sein.
+
+  **Ergänze das Dockerfile** um einen sinnvollen Health Check für
+  eine Node.js-API, die auf Port 3000 läuft.
+
+  Zusätzlich soll der Container bei einem Crash automatisch
+  neu gestartet werden.
+
+hints:
+  - "HEALTHCHECK im Dockerfile definiert, wie Docker prüft ob der Container gesund ist."
+  - "Für eine HTTP-API eignet sich `wget` oder `curl` als Check."
+  - "restart-policies werden im docker-compose.yml gesetzt, nicht im Dockerfile."
+
+config:
+  language: dockerfile
+
+  initial_code: |
+    FROM node:20-alpine
+    WORKDIR /app
+    COPY package*.json ./
+    RUN npm ci --production
+    COPY . .
+    EXPOSE 3000
+
+    # TODO: Health Check ergänzen
+
+    CMD ["node", "server.js"]
+
+  checks:
+    - id: healthcheck
+      type: content-match
+      pattern: "HEALTHCHECK"
+      hint: "Füge eine HEALTHCHECK-Anweisung hinzu"
+      points: 30
+
+    - id: http-check
+      type: regex
+      pattern: '(wget|curl).*localhost.*3000'
+      hint: "Prüfe den HTTP-Endpoint auf localhost:3000 (z.B. mit wget oder curl)"
+      points: 30
+
+    - id: interval
+      type: content-match
+      pattern: "--interval"
+      hint: "Setze ein Intervall für den Health Check (z.B. --interval=30s)"
+      points: 20
+
+    - id: timeout
+      type: regex
+      pattern: '--(timeout|start-period)'
+      hint: "Definiere ein Timeout oder eine Start-Periode"
+      points: 20
+
+  solution: |
+    FROM node:20-alpine
+    WORKDIR /app
+    COPY package*.json ./
+    RUN npm ci --production
+    COPY . .
+    EXPOSE 3000
+
+    HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+      CMD wget -qO- http://localhost:3000/health || exit 1
+
+    CMD ["node", "server.js"]

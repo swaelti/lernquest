@@ -1,0 +1,123 @@
+id: m347-compose-the-stack
+module: m347
+track: m347-compose
+title: "Compose the Stack"
+difficulty: 3
+estimated_minutes: 15
+type: free-code
+competencies:
+  - HZ-C1
+tags: [docker-compose, multi-container, services, yaml]
+prerequisites: [m347-fix-my-dockerfile]
+author: Simon
+version: "1.0"
+
+description: |
+  Eine Webapplikation besteht aus drei Teilen:
+
+  1. **Frontend**: Ein Nginx-Webserver, erreichbar auf Port 8080
+  2. **Backend**: Eine Node.js-API auf Port 3000
+  3. **Datenbank**: PostgreSQL mit persistenten Daten
+
+  **Schreibe ein `docker-compose.yml`** das alle drei Services
+  definiert und korrekt verbindet.
+
+  Anforderungen:
+  - Nginx soll auf Host-Port `8080` erreichbar sein
+  - Die Datenbank braucht ein **Named Volume** für `/var/lib/postgresql/data`
+  - Alle Services sollen in einem **gemeinsamen Netzwerk** sein
+  - Die Datenbank braucht das Environment `POSTGRES_PASSWORD`
+
+hints:
+  - "Jeder Service bekommt einen Block unter 'services:'."
+  - "Ports werden mit 'ports: - \"8080:80\"' gemappt."
+  - "Named Volumes müssen unten separat unter 'volumes:' deklariert werden."
+  - "Networks werden unter 'networks:' deklariert und bei jedem Service referenziert."
+
+config:
+  language: yaml
+
+  starter_code: |
+    # docker-compose.yml
+    services:
+
+      # Dein Code hier...
+
+  checks:
+    - id: frontend-service
+      type: content-match
+      pattern: "nginx"
+      hint: "Definiere einen Service mit dem nginx-Image"
+      points: 15
+
+    - id: backend-service
+      type: content-match
+      pattern: "node"
+      hint: "Definiere einen Service mit einem Node.js-Image"
+      points: 15
+
+    - id: db-service
+      type: content-match
+      pattern: "postgres"
+      hint: "Definiere einen Service mit dem PostgreSQL-Image"
+      points: 15
+
+    - id: port-mapping
+      type: regex
+      pattern: '8080:\s*80'
+      hint: "Mappe den Host-Port 8080 auf den Container-Port 80 (Nginx)"
+      points: 15
+
+    - id: named-volume
+      type: regex
+      pattern: 'volumes:\s*\n\s+\w'
+      hint: "Deklariere mindestens ein Named Volume auf Top-Level"
+      points: 15
+
+    - id: network
+      type: regex
+      pattern: 'networks:\s*\n\s+\w'
+      hint: "Deklariere ein Custom Network auf Top-Level"
+      points: 15
+
+    - id: pg-password
+      type: content-match
+      pattern: "POSTGRES_PASSWORD"
+      hint: "Setze das POSTGRES_PASSWORD als Environment Variable"
+      points: 10
+
+  solution: |
+    services:
+      frontend:
+        image: nginx:alpine
+        ports:
+          - "8080:80"
+        depends_on:
+          - backend
+        networks:
+          - app-net
+
+      backend:
+        image: node:20-alpine
+        ports:
+          - "3000:3000"
+        depends_on:
+          - db
+        networks:
+          - app-net
+
+      db:
+        image: postgres:16-alpine
+        environment:
+          POSTGRES_PASSWORD: changeme
+          POSTGRES_DB: myapp
+        volumes:
+          - db-data:/var/lib/postgresql/data
+        networks:
+          - app-net
+
+    volumes:
+      db-data:
+
+    networks:
+      app-net:

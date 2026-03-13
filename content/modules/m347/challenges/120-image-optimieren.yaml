@@ -1,0 +1,81 @@
+id: m347-image-optimieren
+module: m347
+track: m347-advanced
+title: "Image-Diät: Von 1.2 GB auf unter 100 MB"
+difficulty: 4
+estimated_minutes: 15
+type: fix-the-code
+competencies:
+  - HZ-B2
+tags: [multi-stage, alpine, optimierung, image-size, best-practice]
+prerequisites: [m347-image-groesse]
+author: Simon
+version: "1.0"
+
+description: |
+  Das folgende Dockerfile für eine Go-Applikation produziert ein
+  Image von **1.2 GB**. Dein Ziel: **Unter 20 MB.**
+
+  Nutze alle Optimierungstechniken die du kennst:
+  - Multi-Stage Build
+  - Minimales Base Image
+  - Nur die nötigen Dateien im finalen Image
+
+hints:
+  - "Go kann statisch kompilierte Binaries erzeugen – das finale Image braucht kein Go."
+  - "Das kleinstmögliche Base Image ist 'scratch' (komplett leer) oder 'alpine' (~5 MB)."
+  - "Mit 'COPY --from=builder' holst du nur die kompilierte Binary aus dem Build-Stage."
+  - "Setze CGO_ENABLED=0 für eine statisch gelinkte Binary."
+
+config:
+  language: dockerfile
+
+  initial_code: |
+    FROM golang:1.22
+    WORKDIR /app
+    COPY go.mod go.sum ./
+    RUN go mod download
+    COPY . .
+    RUN go build -o server .
+    EXPOSE 8080
+    CMD ["./server"]
+
+  checks:
+    - id: multi-stage
+      type: regex
+      pattern: 'FROM\s+\S+\s+AS\s+\w+'
+      hint: "Verwende einen Multi-Stage Build (FROM ... AS builder)"
+      points: 25
+
+    - id: minimal-base
+      type: regex
+      pattern: 'FROM\s+(scratch|alpine|gcr\.io/distroless)'
+      hint: "Das finale Image sollte 'scratch', 'alpine' oder 'distroless' als Base verwenden"
+      points: 25
+
+    - id: copy-from
+      type: content-match
+      pattern: "COPY --from="
+      hint: "Kopiere die kompilierte Binary mit COPY --from=builder"
+      points: 25
+
+    - id: static-build
+      type: content-match
+      pattern: "CGO_ENABLED=0"
+      hint: "Setze CGO_ENABLED=0 für eine statisch gelinkte Binary"
+      points: 25
+
+  solution: |
+    # Build Stage
+    FROM golang:1.22-alpine AS builder
+    WORKDIR /app
+    COPY go.mod go.sum ./
+    RUN go mod download
+    COPY . .
+    RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o server .
+
+    # Production Stage
+    FROM scratch
+    COPY --from=builder /app/server /server
+    EXPOSE 8080
+    ENTRYPOINT ["/server"]

@@ -1,0 +1,75 @@
+id: m347-volume-raetsel
+module: m347
+track: m347-compose
+title: "Volume-Rätsel: Wo sind meine Daten?"
+difficulty: 2
+estimated_minutes: 10
+type: multiple-choice
+competencies:
+  - HZ-C2
+tags: [volumes, persistenz, datenverlust, named-volumes, bind-mounts]
+prerequisites: [m347-compose-the-stack]
+author: Simon
+version: "1.0"
+
+description: |
+  Du hast eine PostgreSQL-Datenbank in Docker laufen. Nach einem
+  `docker compose down && docker compose up -d` sind plötzlich
+  alle Daten weg!
+
+  Hier ist dein `docker-compose.yml`:
+
+  ```yaml
+  services:
+    db:
+      image: postgres:16-alpine
+      environment:
+        POSTGRES_PASSWORD: secret
+      volumes:
+        - ./pgdata:/var/lib/postgresql/data
+  ```
+
+  Dein Kollege hat gestern stattdessen `docker compose down -v` ausgeführt.
+
+hints:
+  - "Das Flag `-v` bei `docker compose down` hat eine spezielle Bedeutung."
+  - "Es gibt einen Unterschied zwischen Named Volumes und Bind Mounts."
+
+config:
+  mode: single
+  shuffle: true
+
+  question: "Warum sind die Daten verschwunden?"
+
+  options:
+    - id: a
+      text: "`docker compose down -v` löscht alle Volumes, die im Compose-File definiert sind"
+      correct: true
+      feedback: |
+        Korrekt! Das Flag `-v` (oder `--volumes`) löscht Named Volumes
+        UND anonyme Volumes. Bei Bind Mounts (wie `./pgdata:...`) löscht
+        es den Mount-Eintrag, aber die Dateien auf dem Host bleiben.
+        
+        **Wichtig:** Bei Named Volumes werden die Daten tatsächlich
+        gelöscht! Deshalb: `-v` nur verwenden, wenn man die Daten
+        wirklich loswerden will.
+    - id: b
+      text: "PostgreSQL speichert Daten standardmässig nur im Container-Filesystem"
+      correct: false
+      feedback: |
+        In diesem Fall ist ein Volume-Mount konfiguriert. Das Problem
+        ist nicht das fehlende Volume, sondern das `-v` Flag beim
+        `docker compose down`.
+    - id: c
+      text: "Bind Mounts funktionieren nicht mit PostgreSQL"
+      correct: false
+      feedback: |
+        Bind Mounts funktionieren grundsätzlich mit PostgreSQL.
+        Das Problem liegt am `-v` Flag, das Volumes löscht.
+    - id: d
+      text: "Der Container wurde mit einem neuen Image gebaut und hat die Daten überschrieben"
+      correct: false
+      feedback: |
+        `docker compose up` zieht nur dann ein neues Image, wenn man
+        `--pull always` oder `docker compose pull` vorher ausführt.
+        Das ist hier nicht das Problem.

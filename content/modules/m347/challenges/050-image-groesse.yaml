@@ -1,0 +1,77 @@
+id: m347-image-groesse
+module: m347
+track: m347-grundlagen
+title: "Image-Grösse: Schlank vs. Aufgebläht"
+difficulty: 3
+estimated_minutes: 12
+type: multiple-choice
+competencies:
+  - HZ-B2
+tags: [dockerfile, multi-stage, alpine, optimierung, image-size]
+prerequisites: [m347-fix-my-dockerfile]
+author: Simon
+version: "1.0"
+
+description: |
+  Die Grösse eines Docker-Images hat direkten Einfluss auf
+  Build-Zeiten, Transfer-Geschwindigkeit und Sicherheit.
+
+  Vergleiche die folgenden zwei Dockerfiles für dieselbe Node.js-App
+  und analysiere den Unterschied.
+
+  **Dockerfile A** (naiver Ansatz):
+  ```dockerfile
+  FROM node:20
+  WORKDIR /app
+  COPY . .
+  RUN npm install
+  CMD ["node", "server.js"]
+  ```
+
+  **Dockerfile B** (optimiert):
+  ```dockerfile
+  FROM node:20-alpine AS builder
+  WORKDIR /app
+  COPY package*.json ./
+  RUN npm ci
+  COPY . .
+
+  FROM node:20-alpine
+  WORKDIR /app
+  COPY --from=builder /app/node_modules ./node_modules
+  COPY --from=builder /app/server.js ./
+  CMD ["node", "server.js"]
+  ```
+
+hints:
+  - "Das Base Image 'node:20' basiert auf Debian und ist ca. 1 GB gross."
+  - "Alpine-basierte Images sind deutlich kleiner (ca. 130 MB)."
+  - "Multi-Stage Builds kopieren nur die nötigen Dateien ins finale Image."
+
+config:
+  mode: multi
+  shuffle: false
+
+  question: "Welche Aussagen über den Unterschied sind korrekt? (Mehrere Antworten)"
+
+  options:
+    - id: a
+      text: "Dockerfile B erzeugt ein kleineres Image"
+      correct: true
+      feedback: "Korrekt – alpine ist viel kleiner als das volle Debian-basierte Image."
+    - id: b
+      text: "Dockerfile B hat besseres Layer-Caching"
+      correct: true
+      feedback: "Ja – durch die Trennung von package.json und Code wird npm ci gecacht."
+    - id: c
+      text: "Dockerfile B ist unsicherer, weil alpine weniger Pakete hat"
+      correct: false
+      feedback: "Im Gegenteil: Weniger Pakete = weniger Angriffsfläche. Das ist ein Vorteil."
+    - id: d
+      text: "Im finalen Image von B sind keine devDependencies enthalten"
+      correct: true
+      feedback: "Richtig – der Multi-Stage Build kopiert nur das Nötige. Build-Tools bleiben im Builder-Stage."
+    - id: e
+      text: "Dockerfile A und B produzieren identische Container zur Laufzeit"
+      correct: false
+      feedback: "Die Applikation verhält sich gleich, aber die Images unterscheiden sich massiv in Grösse und Inhalt."

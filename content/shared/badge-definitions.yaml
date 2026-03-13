@@ -1,0 +1,62 @@
+badges:
+  - id: first_challenge
+    title: "Erster Schritt"
+    description: "Erste Challenge abgeschlossen"
+    icon: rocket
+    condition: completed_count >= 1
+
+  - id: five_completed
+    title: "Auf Kurs"
+    description: "5 Challenges abgeschlossen"
+    icon: target
+    condition: completed_count >= 5
+
+  - id: ten_completed
+    title: "Routinier"
+    description: "10 Challenges abgeschlossen"
+    icon: medal
+    condition: completed_count >= 10
+
+  - id: track_complete
+    title: "Track-Meister"
+    description: "Einen ganzen Track abgeschlossen"
+    icon: trophy
+    condition: track_completed
+    per_track: true
+
+  - id: module_complete
+    title: "Modul Komplett"
+    description: "Alle Challenges eines Moduls bestanden"
+    icon: award
+    condition: module_completed
+    per_module: true
+
+  - id: perfectionist
+    title: "Perfektionist"
+    description: "5 Challenges beim ersten Versuch gelöst"
+    icon: star
+    condition: first_try_count >= 5
+
+  - id: speed_demon
+    title: "Speed Demon"
+    description: "Eine Challenge in unter 2 Minuten gelöst"
+    icon: zap
+    condition: min_time < 120
+
+  - id: streak_7
+    title: "Wochenstreak"
+    description: "7 Tage in Folge mindestens eine Challenge gelöst"
+    icon: flame
+    condition: streak >= 7
+
+  - id: boss_slayer
+    title: "Boss Slayer"
+    description: "Eine Boss-Challenge mit über 80% bestanden"
+    icon: sword
+    condition: boss_score >= 80
+
+  - id: reviewer
+    title: "Code Reviewer"
+    description: "Eine Peer-Review-Challenge abgeschlossen"
+    icon: search
+    condition: review_count >= 1

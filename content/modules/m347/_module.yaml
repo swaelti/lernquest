@@ -1,0 +1,59 @@
+id: m347
+title: "Dienst mit Container anwenden"
+description: |
+  Containerisierung mit Docker: Images, Dockerfiles, Compose,
+  Networking, Volumes und Best Practices für den produktiven Einsatz.
+  
+  Dieses Modul deckt den gesamten Container-Lifecycle ab – vom ersten
+  Dockerfile über Multi-Container-Setups bis zu Security und CI/CD.
+version: "1.0.0"
+language: de-CH
+icon: container
+color: "#2496ED"
+estimated_hours: 40
+
+competencies:
+  - id: "HZ-A1"
+    title: "Containerkonzepte verstehen"
+    description: "Container vs. VM, OCI-Standards, Images, Registry-Konzepte"
+  - id: "HZ-A2"
+    title: "Architekturentscheide treffen"
+    description: "Monolith vs. Microservices, Container-Orchestrierung"
+  - id: "HZ-B1"
+    title: "Images erstellen"
+    description: "Dockerfile-Syntax, Build-Prozess, Base Images"
+  - id: "HZ-B2"
+    title: "Images optimieren"
+    description: "Multi-Stage Builds, Layer-Caching, Image-Grösse minimieren"
+  - id: "HZ-C1"
+    title: "Compose einsetzen"
+    description: "docker-compose.yml, Multi-Container-Setups, Service-Definitionen"
+  - id: "HZ-C2"
+    title: "Daten und Netzwerk konfigurieren"
+    description: "Volumes, Named Volumes, Bridge Networks, DNS"
+  - id: "HZ-C3"
+    title: "Konfiguration verwalten"
+    description: "Environment Variables, Secrets, .env-Dateien"
+  - id: "HZ-D1"
+    title: "Betrieb und Monitoring"
+    description: "Health Checks, Logging, Restart Policies, Resource Limits"
+  - id: "HZ-D2"
+    title: "Sicherheit gewährleisten"
+    description: "Image Scanning, Least Privilege, Security Best Practices"
+  - id: "HZ-D3"
+    title: "CI/CD mit Containern"
+    description: "Container in Pipelines, GitHub Actions, automatisierte Builds"
+
+tracks:
+  - 01-grundlagen
+  - 02-compose
+  - 03-advanced
+
+authors:
+  - name: "Simon"
+    role: maintainer
+
+changelog:
+  - version: "1.0.0"
+    date: 2026-03-01
+    changes: "Initialer Release mit 18 Challenges inkl. 3 Boss-Challenges"

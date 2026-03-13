@@ -1,0 +1,163 @@
+id: m347-monolith-vs-micro
+module: m347
+track: m347-advanced
+title: "Architektur-Entscheid: Monolith oder Microservices?"
+difficulty: 4
+estimated_minutes: 15
+type: scenario
+competencies:
+  - HZ-A2
+tags: [architektur, monolith, microservices, entscheidung, trade-offs]
+prerequisites: [m347-compose-the-stack]
+author: Simon
+version: "1.0"
+
+description: |
+  Du bist Tech Lead bei einem Schweizer Startup. Euer Produkt –
+  eine Plattform für Online-Buchungen – wächst schnell.
+
+  Das Team diskutiert: Soll die bestehende Monolith-Applikation
+  in Microservices aufgeteilt werden?
+
+  **Triff die richtigen Entscheidungen für euer Unternehmen.**
+
+hints:
+  - "Es gibt keine universell richtige Antwort – der Kontext zählt."
+  - "Microservices bringen Komplexität. Braucht ihr das wirklich?"
+
+config:
+  initial_situation: |
+    **Ausgangslage:**
+    - Team: 6 Entwickler:innen
+    - Aktueller Stack: Node.js-Monolith, PostgreSQL, Redis
+    - Traffic: 10'000 Buchungen/Tag, stark wachsend
+    - Pain Points: Deployments dauern 20 Min, ein Bug im Payment-Modul
+      hat letzte Woche die ganze Plattform lahmgelegt
+    - Eure App hat 3 Hauptbereiche: Suche, Buchung, Payment
+
+  steps:
+    - id: step1
+      text: |
+        Der CTO will sofort alles in Microservices umbauen.
+        Was schlägst du vor?
+      options:
+        - id: full-micro
+          text: "Sofort komplett auf Microservices umstellen"
+          next: step2-micro
+          points: 15
+          feedback: |
+            Mutig! Aber ein kompletter Umbau bei 6 Leuten und wachsendem
+            Traffic ist riskant. Das wird Monate dauern und das Team
+            aufhalten.
+        - id: modular-monolith
+          text: "Erst den Monolith modularisieren, dann gezielt extrahieren"
+          next: step2-modular
+          points: 50
+          feedback: |
+            Sehr klug! Der 'Modular Monolith' ist ein bewährter
+            Zwischenschritt. Saubere Modul-Grenzen ziehen, bevor man
+            Services abtrennt.
+        - id: strangler
+          text: "Strangler Fig Pattern: Nur den Payment-Service extrahieren"
+          next: step2-strangler
+          points: 40
+          feedback: |
+            Guter Pragmatismus! Das Payment-Modul verursacht die
+            meisten Probleme und hat klare Grenzen – ein idealer
+            Kandidat für die erste Extraktion.
+
+    - id: step2-modular
+      text: |
+        Gute Wahl. Ihr modularisiert den Monolith intern. Nach 3 Monaten
+        habt ihr klare Modul-Grenzen. Welches Modul extrahiert ihr zuerst?
+      options:
+        - id: payment
+          text: "Payment – hat die kritischsten Bugs verursacht"
+          next: step3
+          points: 40
+          feedback: "Sinnvoll – das Payment-Modul hat die höchste Business-Kritikalität und klare Schnittstellen."
+        - id: search
+          text: "Suche – hat andere Skalierungsanforderungen"
+          next: step3
+          points: 35
+          feedback: "Auch eine gute Wahl – die Suche hat andere Performance-Anforderungen und kann unabhängig skaliert werden."
+
+    - id: step2-strangler
+      text: |
+        Ihr extrahiert den Payment-Service. Wie handhabt ihr die
+        Kommunikation zwischen Monolith und neuem Service?
+      options:
+        - id: sync-api
+          text: "Synchrone REST-API-Calls"
+          next: step3
+          points: 30
+          feedback: "Einfach umzusetzen, aber: Wenn der Payment-Service down ist, blockiert die ganze Buchung."
+        - id: async-events
+          text: "Asynchrone Events über eine Message Queue"
+          next: step3
+          points: 45
+          feedback: "Robuster! Events entkoppeln die Services zeitlich. Wenn Payment kurz down ist, gehen keine Buchungen verloren."
+
+    - id: step2-micro
+      text: |
+        Der Umbau läuft seit 2 Monaten. Euer Team kämpft mit:
+        - Service Discovery
+        - Verteiltes Logging
+        - Netzwerk-Latenz zwischen Services
+
+        Was tut ihr?
+      options:
+        - id: pause
+          text: "Pause – erst die Infrastruktur-Basics lösen"
+          next: step3
+          points: 35
+          feedback: "Vernünftig. Ohne Observability und Service Mesh wird Debugging zum Alptraum."
+        - id: continue
+          text: "Weitermachen – die Probleme lösen wir unterwegs"
+          next: conclusion-bad
+          points: 10
+          feedback: "Riskant. Technische Schulden stapeln sich, und das Team wird frustriert."
+
+    - id: step3
+      text: |
+        6 Monate später: Die Architektur-Entscheidung war richtig.
+        Euer Deployment-Prozess hat sich verbessert. Aber jetzt fragt
+        ein neuer Entwickler: 'Sollen wir für jedes Feature einen
+        eigenen Microservice bauen?'
+      options:
+        - id: no-nano
+          text: "'Nein – nur dort Services abtrennen, wo es einen klaren Mehrwert gibt'"
+          next: conclusion-best
+          points: 50
+          feedback: "Perfekt! Services um ihrer selbst willen zu bauen ist ein Anti-Pattern."
+        - id: yes-always
+          text: "'Ja, jedes Feature sollte sein eigener Service sein'"
+          next: conclusion-ok
+          points: 10
+          feedback: "'Nano-Services' sind ein bekanntes Anti-Pattern. Zu viele kleine Services erzeugen mehr Probleme als sie lösen."
+
+  conclusions:
+    - id: conclusion-best
+      text: |
+        **Hervorragend!** Du hast pragmatisch entschieden:
+
+        - Kein Big Bang Rewrite, sondern schrittweise Evolution
+        - Services nur dort, wo der Nutzen die Komplexität rechtfertigt
+        - Infrastruktur-Basics (Logging, Monitoring) zuerst
+
+        **Merke:** "Microservices are not the goal – they are a tool."
+      rating: excellent
+    - id: conclusion-ok
+      text: |
+        **Solide Arbeit**, auch wenn nicht jede Entscheidung optimal war.
+        Die wichtigste Lektion: Architektur-Entscheide sollten immer
+        vom konkreten Problem und Team-Kontext ausgehen, nicht von
+        Hype-Zyklen.
+      rating: good
+    - id: conclusion-bad
+      text: |
+        **Lektion gelernt:** Ein kompletter Microservices-Umbau
+        ohne vorherige Modularisierung und Infrastruktur-Basics
+        ist für kleine Teams oft kontraproduktiv. Nächstes Mal:
+        Erst den Monolith aufräumen!
+      rating: poor

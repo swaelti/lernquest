@@ -1,0 +1,72 @@
+id: m347-layer-cache-quiz
+module: m347
+track: m347-grundlagen
+title: "Layer-Cache-Quiz"
+difficulty: 2
+estimated_minutes: 8
+type: multiple-choice
+competencies:
+  - HZ-B1
+  - HZ-B2
+tags: [dockerfile, layer-cache, optimierung]
+prerequisites: [m347-dockerfile-anatomie]
+author: Simon
+version: "1.0"
+
+description: |
+  Docker baut Images Layer für Layer auf. Wenn sich ein Layer ändert,
+  werden alle nachfolgenden Layer ungültig und müssen neu gebaut werden.
+
+  Teste dein Verständnis des Layer-Caching-Mechanismus.
+
+hints:
+  - "Jede Dockerfile-Anweisung erzeugt einen eigenen Layer."
+  - "Ein Layer wird nur dann aus dem Cache genommen, wenn er UND alle vorherigen Layer unverändert sind."
+
+config:
+  mode: single
+  shuffle: true
+
+  question: |
+    Du änderst eine Zeile Code in `server.js`. Dein Dockerfile sieht so aus:
+
+    ```
+    FROM node:20-alpine        # Layer 1
+    WORKDIR /app               # Layer 2
+    COPY package.json ./       # Layer 3
+    RUN npm ci                 # Layer 4
+    COPY . .                   # Layer 5
+    CMD ["node", "server.js"]  # Layer 6
+    ```
+
+    Welche Layer müssen beim nächsten Build **neu gebaut** werden?
+
+  options:
+    - id: a
+      text: "Nur Layer 5 und 6"
+      correct: true
+      feedback: |
+        Korrekt! `COPY . .` erkennt die Änderung in server.js und
+        invalidiert diesen Layer. Alle nachfolgenden Layer (CMD) werden
+        ebenfalls neu gebaut. Layer 1-4 kommen aus dem Cache.
+    - id: b
+      text: "Alle Layer (1-6)"
+      correct: false
+      feedback: |
+        Nicht ganz. Da sich package.json nicht geändert hat, bleiben
+        Layer 1-4 im Cache. Nur ab dem Layer, wo sich etwas ändert,
+        wird neu gebaut.
+    - id: c
+      text: "Nur Layer 5"
+      correct: false
+      feedback: |
+        Fast! Layer 5 wird zwar korrekt als geändert erkannt, aber
+        alle Layer NACH einem invalidierten Layer werden ebenfalls
+        neu gebaut. Also auch Layer 6.
+    - id: d
+      text: "Layer 4, 5 und 6"
+      correct: false
+      feedback: |
+        Layer 4 (npm ci) wird nur invalidiert, wenn sich Layer 3
+        (package.json) geändert hat. Da wir nur server.js geändert
+        haben, bleibt Layer 4 im Cache.

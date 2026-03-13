@@ -1,0 +1,109 @@
+id: m347-fix-compose
+module: m347
+track: m347-compose
+title: "Kaputtes Compose reparieren"
+difficulty: 3
+estimated_minutes: 12
+type: fix-the-code
+competencies:
+  - HZ-C1
+  - HZ-C2
+tags: [docker-compose, debugging, yaml, networking]
+prerequisites: [m347-compose-the-stack]
+author: Simon
+version: "1.0"
+
+description: |
+  Ein Kollege hat dir sein `docker-compose.yml` geschickt. Leider startet
+  der Stack nicht korrekt – die Webapp kann die Datenbank nicht erreichen,
+  und von aussen ist auch nichts erreichbar.
+
+  **Finde und behebe die 4 Fehler.**
+
+hints:
+  - "Prüfe ob der Port korrekt gemappt ist – Format ist 'HOST:CONTAINER'."
+  - "Der Datenbankname im Connection-String muss zum Service-Namen passen."
+  - "Volumes brauchen eine Top-Level-Deklaration."
+  - "Sind beide Services im selben Netzwerk?"
+
+config:
+  language: yaml
+
+  initial_code: |
+    services:
+      webapp:
+        image: myapp:latest
+        ports:
+          - "3000"
+        environment:
+          DATABASE_URL: "postgresql://user:pass@database:5432/mydb"
+        networks:
+          - frontend
+
+      db:
+        image: postgres:16-alpine
+        environment:
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: pass
+          POSTGRES_DB: mydb
+        volumes:
+          - pgdata:/var/lib/postgresql/data
+        networks:
+          - backend
+
+    networks:
+      frontend:
+      backend:
+
+  checks:
+    - id: port-mapping
+      type: regex
+      pattern: '"\d+:\d+"'
+      hint: "Port-Mapping braucht HOST:CONTAINER Format (z.B. \"3000:3000\")"
+      points: 25
+
+    - id: same-network
+      type: regex
+      pattern: 'webapp:[\s\S]*?networks:[\s\S]*?(\w+)[\s\S]*?db:[\s\S]*?networks:[\s\S]*?\1'
+      hint: "Webapp und DB müssen im selben Netzwerk sein, damit sie kommunizieren können"
+      points: 25
+
+    - id: service-name-in-url
+      type: content-match
+      pattern: "@db:"
+      hint: "Im DATABASE_URL muss der Service-Name 'db' als Hostname stehen (nicht 'database')"
+      points: 25
+
+    - id: volume-declaration
+      type: regex
+      pattern: 'volumes:\s*\n\s+pgdata:'
+      hint: "Named Volumes müssen auf Top-Level unter 'volumes:' deklariert werden"
+      points: 25
+
+  solution: |
+    services:
+      webapp:
+        image: myapp:latest
+        ports:
+          - "3000:3000"
+        environment:
+          DATABASE_URL: "postgresql://user:pass@db:5432/mydb"
+        networks:
+          - app-net
+
+      db:
+        image: postgres:16-alpine
+        environment:
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: pass
+          POSTGRES_DB: mydb
+        volumes:
+          - pgdata:/var/lib/postgresql/data
+        networks:
+          - app-net
+
+    networks:
+      app-net:
+
+    volumes:
+      pgdata:

@@ -1,0 +1,80 @@
+id: m347-container-vs-vm
+module: m347
+track: m347-grundlagen
+title: "Container vs. VM vs. Bare Metal"
+difficulty: 1
+estimated_minutes: 8
+type: drag-drop
+competencies:
+  - HZ-A1
+tags: [container, vm, grundlagen, konzepte]
+author: Simon
+version: "1.0"
+
+description: |
+  Ordne die folgenden Eigenschaften der richtigen Technologie zu.
+
+  Manche Eigenschaften treffen auf mehrere Kategorien zu –
+  überlege genau, wo sie am besten passen.
+
+hints:
+  - "Container teilen sich den Kernel des Host-Systems."
+  - "VMs brauchen einen Hypervisor, Container nicht."
+  - "Bare Metal hat keinen Virtualisierungs-Overhead."
+
+config:
+  mode: categorize
+
+  instruction: "Ordne jede Eigenschaft der passenden Technologie zu:"
+
+  categories:
+    - id: container
+      title: "Container"
+    - id: vm
+      title: "Virtuelle Maschine"
+    - id: bare-metal
+      title: "Bare Metal"
+
+  items:
+    - id: shared-kernel
+      text: "Teilt den Kernel mit dem Host"
+      correct_category: container
+    - id: hypervisor
+      text: "Benötigt einen Hypervisor"
+      correct_category: vm
+    - id: seconds-start
+      text: "Startet in Sekunden"
+      correct_category: container
+    - id: full-os
+      text: "Eigenes vollständiges Betriebssystem"
+      correct_category: vm
+    - id: max-performance
+      text: "Maximale Hardware-Performance"
+      correct_category: bare-metal
+    - id: image-layers
+      text: "Nutzt Image-Layer zur Speicheroptimierung"
+      correct_category: container
+    - id: hardware-access
+      text: "Direkter Zugriff auf physische Hardware"
+      correct_category: bare-metal
+    - id: snapshot
+      text: "Snapshots des gesamten Systems möglich"
+      correct_category: vm
+    - id: namespace-isolation
+      text: "Isolation über Linux Namespaces"
+      correct_category: container
+    - id: minutes-start
+      text: "Boot-Zeit in Minuten"
+      correct_category: vm
+
+  explanation: |
+    **Container** nutzen den Host-Kernel und isolieren Prozesse über
+    Linux Namespaces und Cgroups. Sie sind leichtgewichtig und starten
+    in Sekunden.
+
+    **Virtuelle Maschinen** emulieren komplette Hardware über einen
+    Hypervisor. Jede VM hat ihr eigenes OS, was mehr Ressourcen
+    braucht, aber stärkere Isolation bietet.
+
+    **Bare Metal** bedeutet direkte Installation auf der Hardware –
+    maximale Performance, aber keine Isolation zwischen Workloads.

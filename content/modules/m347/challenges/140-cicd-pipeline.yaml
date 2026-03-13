@@ -1,0 +1,102 @@
+id: m347-cicd-pipeline
+module: m347
+track: m347-advanced
+title: "CI/CD-Pipeline: GitHub Action bauen"
+difficulty: 4
+estimated_minutes: 15
+type: drag-drop
+competencies:
+  - HZ-D3
+tags: [cicd, github-actions, pipeline, automation, registry]
+prerequisites: [m347-healthcheck]
+author: Simon
+version: "1.0"
+
+description: |
+  Du sollst eine GitHub Action erstellen, die bei jedem Push auf
+  den `main`-Branch automatisch:
+
+  1. Das Docker-Image baut
+  2. Einen Security-Scan durchführt
+  3. Das Image in die GitHub Container Registry (ghcr.io) pusht
+  4. Optional: Einen Smoke-Test auf dem gebauten Container ausführt
+
+  **Bringe die Pipeline-Steps in die richtige Reihenfolge.**
+
+hints:
+  - "Zuerst musst du dich bei der Registry anmelden, bevor du pushen kannst."
+  - "Der Security-Scan sollte VOR dem Push passieren – du willst keine unsicheren Images publishen."
+  - "Checkout ist immer der erste Schritt."
+
+config:
+  mode: sort
+
+  instruction: "Sortiere die CI/CD-Steps in die korrekte Reihenfolge:"
+
+  items:
+    - id: checkout
+      text: "📥 Checkout – Repository-Code auschecken"
+      correct_position: 1
+    - id: login
+      text: "🔐 Login – Bei ghcr.io authentifizieren"
+      correct_position: 2
+    - id: build
+      text: "🔨 Build – Docker Image bauen mit Tag"
+      correct_position: 3
+    - id: scan
+      text: "🔍 Scan – Trivy Security Scan auf dem Image"
+      correct_position: 4
+    - id: test
+      text: "🧪 Test – Container starten und Smoke-Test"
+      correct_position: 5
+    - id: push
+      text: "📤 Push – Image in die Registry pushen"
+      correct_position: 6
+
+  explanation: |
+    **Die optimale Pipeline-Reihenfolge:**
+
+    1. **Checkout** – Ohne Code geht nichts
+    2. **Registry-Login** – Credentials bereitstellen
+    3. **Build** – Image bauen (noch lokal)
+    4. **Security Scan** – Vor dem Push scannen!
+    5. **Test** – Container kurz starten und testen
+    6. **Push** – Erst wenn alles grün ist, publishen
+
+    **Warum Scan vor Push?**
+    Wenn der Scan kritische Vulnerabilities findet, soll die Pipeline
+    fehlschlagen und das Image NICHT in die Registry gepusht werden.
+
+    ```yaml
+    # .github/workflows/docker.yml
+    name: Build & Push
+    on:
+      push:
+        branches: [main]
+    jobs:
+      build:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v4
+          - uses: docker/login-action@v3
+            with:
+              registry: ghcr.io
+              username: ${{ github.actor }}
+              password: ${{ secrets.GITHUB_TOKEN }}
+          - uses: docker/build-push-action@v5
+            with:
+              push: false
+              tags: ghcr.io/${{ github.repository }}:latest
+              load: true
+          - name: Security Scan
+            uses: aquasecurity/trivy-action@master
+            with:
+              image-ref: ghcr.io/${{ github.repository }}:latest
+              severity: CRITICAL,HIGH
+              exit-code: 1
+          - name: Push
+            uses: docker/build-push-action@v5
+            with:
+              push: true
+              tags: ghcr.io/${{ github.repository }}:latest
+    ```

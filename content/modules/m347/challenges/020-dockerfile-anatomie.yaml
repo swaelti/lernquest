@@ -1,0 +1,68 @@
+id: m347-dockerfile-anatomie
+module: m347
+track: m347-grundlagen
+title: "Dockerfile-Anatomie"
+difficulty: 2
+estimated_minutes: 10
+type: drag-drop
+competencies:
+  - HZ-B1
+tags: [dockerfile, basics, reihenfolge, layer-cache]
+prerequisites: [m347-container-vs-vm]
+author: Simon
+version: "1.0"
+
+description: |
+  Ein Dockerfile hat eine optimale Reihenfolge der Anweisungen.
+  Dateien die sich **selten ändern** kommen zuerst – so wird das
+  Layer-Caching optimal genutzt.
+
+  **Bringe die Anweisungen in die richtige Reihenfolge** für eine
+  Node.js-Applikation.
+
+hints:
+  - "FROM muss immer die erste Anweisung sein."
+  - "Kopiere zuerst nur package.json, dann npm install, dann den Rest."
+  - "CMD kommt immer als letztes."
+
+config:
+  mode: sort
+
+  instruction: "Sortiere die Dockerfile-Anweisungen in die optimale Reihenfolge:"
+
+  items:
+    - id: from
+      text: "FROM node:20-alpine"
+      correct_position: 1
+    - id: workdir
+      text: "WORKDIR /app"
+      correct_position: 2
+    - id: copy-pkg
+      text: "COPY package*.json ./"
+      correct_position: 3
+    - id: install
+      text: "RUN npm ci --production"
+      correct_position: 4
+    - id: copy-src
+      text: "COPY . ."
+      correct_position: 5
+    - id: expose
+      text: "EXPOSE 3000"
+      correct_position: 6
+    - id: cmd
+      text: 'CMD ["node", "server.js"]'
+      correct_position: 7
+
+  explanation: |
+    **Warum diese Reihenfolge?**
+
+    Docker baut jede Anweisung als eigenen Layer. Wenn sich ein Layer
+    ändert, werden alle nachfolgenden Layer neu gebaut.
+
+    - `package.json` ändert sich seltener als der Quellcode
+    - Daher: Erst Dependencies installieren, dann Code kopieren
+    - So wird `npm ci` nur bei Dependency-Änderungen neu ausgeführt
+    - Das spart bei jedem Build viel Zeit!
+
+    **Merke:** Vom Stabilen zum Volatilen – das ist das Grundprinzip
+    für effizientes Layer-Caching.

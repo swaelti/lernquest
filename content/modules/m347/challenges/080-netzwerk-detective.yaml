@@ -1,0 +1,137 @@
+id: m347-netzwerk-detective
+module: m347
+track: m347-compose
+title: "Netzwerk-Detective"
+difficulty: 3
+estimated_minutes: 15
+type: scenario
+competencies:
+  - HZ-C2
+tags: [networking, debugging, dns, bridge, troubleshooting]
+prerequisites: [m347-compose-the-stack]
+author: Simon
+version: "1.0"
+
+description: |
+  Du betreibst einen Stack aus drei Containern: Frontend (Nginx),
+  Backend (Node.js), und Datenbank (PostgreSQL). Das Frontend soll
+  Requests an das Backend weiterleiten, das Backend spricht mit der DB.
+
+  **Problem:** Seit dem letzten Update funktioniert die Verbindung
+  vom Backend zur Datenbank nicht mehr. Die Fehlermeldung lautet:
+  `Error: getaddrinfo EAI_AGAIN database`
+
+hints:
+  - "Docker-Compose erstellt automatisch DNS-Einträge für jeden Service-Namen."
+  - "Prüfe ob die Services im selben Netzwerk sind."
+
+config:
+  initial_situation: |
+    Du siehst folgende Container laufen:
+
+    ```
+    CONTAINER ID   NAMES        NETWORKS
+    a1b2c3d4       frontend     myapp_web
+    e5f6g7h8       backend      myapp_web
+    i9j0k1l2       database     myapp_data
+    ```
+
+    Die Fehlermeldung im Backend-Log:
+    `Error: getaddrinfo EAI_AGAIN database`
+
+  steps:
+    - id: step1
+      text: "Was bedeutet die Fehlermeldung `getaddrinfo EAI_AGAIN`?"
+      options:
+        - id: dns-fail
+          text: "DNS-Auflösung fehlgeschlagen – der Hostname 'database' kann nicht aufgelöst werden"
+          next: step2
+          points: 40
+          feedback: "Genau! EAI_AGAIN ist ein DNS-Fehler. Der Container kann den Hostnamen nicht finden."
+        - id: port-blocked
+          text: "Der Port 5432 ist blockiert"
+          next: step2-wrong
+          points: 10
+          feedback: "Nicht ganz – ein Port-Problem würde anders aussehen (ECONNREFUSED). Das hier ist ein DNS-Problem."
+        - id: auth-fail
+          text: "Die Datenbank-Credentials sind falsch"
+          next: step2-wrong
+          points: 5
+          feedback: "Nein – bei falschen Credentials käme 'authentication failed', nicht ein DNS-Fehler."
+
+    - id: step2
+      text: |
+        Richtig! Ein DNS-Problem. Du schaust dir die Netzwerke an:
+
+        - `frontend` und `backend` sind im Netzwerk `myapp_web`
+        - `database` ist im Netzwerk `myapp_data`
+
+        Was ist die Lösung?
+      options:
+        - id: same-network
+          text: "Die Datenbank ins selbe Netzwerk wie das Backend setzen"
+          next: conclusion-best
+          points: 50
+          feedback: "Perfekt! Container können sich nur über DNS finden, wenn sie im selben Docker-Netzwerk sind."
+        - id: use-ip
+          text: "Die IP-Adresse der Datenbank statt des Hostnamens verwenden"
+          next: conclusion-ok
+          points: 20
+          feedback: "Das funktioniert kurzfristig, ist aber fragil – die IP kann sich bei jedem Neustart ändern."
+        - id: host-network
+          text: "Alle Container auf 'network_mode: host' setzen"
+          next: conclusion-bad
+          points: 10
+          feedback: "Host-Networking umgeht das Problem, aber es gibt keine Netzwerk-Isolation mehr – keine gute Idee in Produktion."
+
+    - id: step2-wrong
+      text: |
+        Schauen wir nochmal genau hin. Die Netzwerk-Übersicht zeigt:
+
+        - `backend` ist im Netzwerk `myapp_web`
+        - `database` ist im Netzwerk `myapp_data`
+
+        Die sind in **verschiedenen Netzwerken**. Was tun?
+      options:
+        - id: same-network-2
+          text: "Beide Services ins selbe Netzwerk setzen"
+          next: conclusion-best
+          points: 40
+          feedback: "Richtig! Docker-DNS funktioniert nur innerhalb desselben Netzwerks."
+        - id: link
+          text: "docker-compose 'links' verwenden"
+          next: conclusion-ok
+          points: 15
+          feedback: "Links sind veraltet (legacy feature). Besser: Gemeinsames Netzwerk nutzen."
+
+  conclusions:
+    - id: conclusion-best
+      text: |
+        **Hervorragend!** Du hast die Root Cause erkannt: DNS-Auflösung
+        funktioniert in Docker nur innerhalb desselben Netzwerks. Die
+        Lösung: Backend und Database ins selbe Netzwerk setzen.
+
+        ```yaml
+        services:
+          backend:
+            networks:
+              - app-net
+          database:
+            networks:
+              - app-net
+        ```
+      rating: excellent
+    - id: conclusion-ok
+      text: |
+        **Nicht schlecht**, aber es gibt eine bessere Lösung. In Docker
+        funktioniert die DNS-basierte Service-Discovery nur innerhalb
+        desselben Netzwerks. Die saubere Lösung ist, beide Services
+        ins selbe Netzwerk zu setzen.
+      rating: good
+    - id: conclusion-bad
+      text: |
+        **Das funktioniert, aber...** Host-Networking entfernt die
+        Netzwerk-Isolation komplett. Die eigentliche Ursache war, dass
+        Backend und Database in verschiedenen Netzwerken waren. Besser:
+        Gemeinsames Docker-Netzwerk nutzen.
+      rating: poor

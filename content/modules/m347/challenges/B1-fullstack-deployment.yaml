@@ -1,0 +1,176 @@
+id: m347-boss-fullstack
+module: m347
+track: m347-advanced
+title: "🏆 Boss: Full-Stack Deployment"
+difficulty: 5
+estimated_minutes: 30
+type: free-code
+competencies:
+  - HZ-B1
+  - HZ-C1
+  - HZ-C2
+  - HZ-C3
+tags: [boss, fullstack, dockerfile, compose, projekt]
+prerequisites: [m347-compose-the-stack, m347-fix-my-dockerfile]
+author: Simon
+version: "1.0"
+
+description: |
+  # 🏆 Boss-Challenge
+
+  Ein Kunde beschreibt dir seine Applikation:
+
+  > *«Wir haben eine React-Frontend-App und ein Python-Flask-Backend.
+  > Das Backend braucht eine PostgreSQL-Datenbank und einen
+  > Redis-Cache. Das Frontend wird mit nginx ausgeliefert.
+  > Alles muss mit einem einzigen Befehl starten.»*
+
+  **Erstelle ein vollständiges `docker-compose.yml`** das folgende
+  Anforderungen erfüllt:
+
+  - **Frontend**: nginx, Port 80 nach aussen
+  - **Backend**: Python/Flask, Port 5000 intern
+  - **Datenbank**: PostgreSQL 16 mit Named Volume
+  - **Cache**: Redis mit Named Volume
+  - **Netzwerk**: Alle Services im selben Netzwerk
+  - **Health Checks**: Mindestens für das Backend
+  - **Restart Policy**: Alle Services automatisch neustarten
+  - **Environment**: Datenbank-Credentials in Variablen
+
+hints:
+  - "depends_on stellt sicher, dass Services in der richtigen Reihenfolge starten."
+  - "Verwende Alpine-Varianten für kleinere Images."
+  - "Redis braucht standardmässig kein Passwort – aber in Produktion sollte eins gesetzt werden."
+  - "Das Backend braucht die Connection-Strings für DB und Redis als Environment Variables."
+
+config:
+  language: yaml
+
+  starter_code: |
+    # docker-compose.yml – Full-Stack Deployment
+    # Frontend: nginx (Port 80)
+    # Backend: Python/Flask (Port 5000)
+    # Database: PostgreSQL
+    # Cache: Redis
+    
+    services:
+      # Dein Code hier...
+
+  checks:
+    - id: nginx
+      type: content-match
+      pattern: "nginx"
+      hint: "Definiere einen nginx-Service fürs Frontend"
+      points: 10
+
+    - id: flask
+      type: regex
+      pattern: '(python|flask)'
+      hint: "Definiere einen Python/Flask-Backend-Service"
+      points: 10
+
+    - id: postgres
+      type: content-match
+      pattern: "postgres"
+      hint: "Definiere einen PostgreSQL-Service"
+      points: 10
+
+    - id: redis
+      type: content-match
+      pattern: "redis"
+      hint: "Definiere einen Redis-Service"
+      points: 10
+
+    - id: port-80
+      type: regex
+      pattern: '"?80:80"?'
+      hint: "Das Frontend soll auf Port 80 erreichbar sein"
+      points: 10
+
+    - id: named-volumes
+      type: regex
+      pattern: 'volumes:\s*\n\s+\w+-data:'
+      hint: "Deklariere Named Volumes für PostgreSQL und Redis"
+      points: 10
+
+    - id: network
+      type: regex
+      pattern: 'networks:\s*\n\s+\w+'
+      hint: "Definiere ein gemeinsames Netzwerk"
+      points: 10
+
+    - id: healthcheck
+      type: content-match
+      pattern: "healthcheck"
+      hint: "Füge einen Health Check hinzu (mindestens fürs Backend)"
+      points: 10
+
+    - id: restart
+      type: content-match
+      pattern: "restart"
+      hint: "Setze eine Restart Policy (z.B. unless-stopped)"
+      points: 10
+
+    - id: depends-on
+      type: content-match
+      pattern: "depends_on"
+      hint: "Definiere Abhängigkeiten zwischen Services"
+      points: 10
+
+  solution: |
+    services:
+      frontend:
+        image: nginx:alpine
+        ports:
+          - "80:80"
+        depends_on:
+          - backend
+        restart: unless-stopped
+        networks:
+          - app-net
+
+      backend:
+        image: python:3.12-alpine
+        command: ["flask", "run", "--host=0.0.0.0"]
+        environment:
+          - FLASK_APP=app.py
+          - DATABASE_URL=postgresql://app:secret@db:5432/myapp
+          - REDIS_URL=redis://cache:6379/0
+        depends_on:
+          - db
+          - cache
+        healthcheck:
+          test: ["CMD", "wget", "-qO-", "http://localhost:5000/health"]
+          interval: 30s
+          timeout: 3s
+          retries: 3
+        restart: unless-stopped
+        networks:
+          - app-net
+
+      db:
+        image: postgres:16-alpine
+        environment:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: secret
+          POSTGRES_DB: myapp
+        volumes:
+          - pg-data:/var/lib/postgresql/data
+        restart: unless-stopped
+        networks:
+          - app-net
+
+      cache:
+        image: redis:7-alpine
+        volumes:
+          - redis-data:/data
+        restart: unless-stopped
+        networks:
+          - app-net
+
+    volumes:
+      pg-data:
+      redis-data:
+
+    networks:
+      app-net:
