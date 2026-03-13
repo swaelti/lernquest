@@ -1,7 +1,7 @@
 services:
   lernquest:
     build: .
-    # Alternativ: image: ghcr.io/simonx/lernquest:latest
+    # Alternativ: image: ghcr.io/swaelti/lernquest:latest
     ports:
       - "${PORT:-8080}:8080"
     volumes:
@@ -9,7 +9,7 @@ services:
       - lernquest-content:/app/content
     environment:
       - SECRET_KEY=${SECRET_KEY:-change-me-to-a-random-string}
-      - CONTENT_REPO=${CONTENT_REPO:-https://github.com/simonx/lernquest-content}
+      - CONTENT_REPO=${CONTENT_REPO:-https://github.com/swaelti/lernquest-content}
       - AUTO_SYNC=${AUTO_SYNC:-off}
       - BASE_URL=${BASE_URL:-http://localhost:8080}
       - LOG_LEVEL=${LOG_LEVEL:-info}
